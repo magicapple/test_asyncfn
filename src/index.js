@@ -10,10 +10,10 @@ const asyncFn = (callback) => {
 };
 
 // 异步函数转 promise
-const makePromise = function (asyncFn) {
+const makePromise = function (asyncFn, callback) {
   return new Promise((resolve) => {
     asyncFn((res) => {
-      resolve(res);
+      resolve(callback(res));
     });
   });
 };
@@ -22,7 +22,7 @@ const makePromise = function (asyncFn) {
 const syncQueue = async (asyncFnList) => {
   console.time();
   for (const asyncFn of asyncFnList) {
-    await makePromise(asyncFn);
+    await makePromise(asyncFn, (res) => res);
   }
   console.timeEnd();
 };
@@ -32,7 +32,9 @@ const syncQueue = async (asyncFnList) => {
 // 2 异步函数队列并行执行
 const concurrentQueue = async (asyncFunList, callback) => {
   console.time();
-  await Promise.all(asyncFunList.map((asyncFn) => makePromise(asyncFn)));
+  await Promise.all(
+    asyncFunList.map((asyncFn) => makePromise(asyncFn, (res) => res))
+  );
   callback();
   console.timeEnd();
 };
@@ -46,7 +48,7 @@ const concurrentQueue1 = async (asyncFunList, callback, callbackEnd) => {
   console.time();
   await Promise.all(
     asyncFunList.map((asyncFn) =>
-      makePromise(asyncFn).then((res) => {
+      makePromise(asyncFn, (res) => res).then((res) => {
         callback(res);
       })
     )
@@ -67,7 +69,7 @@ const concurrentQueue2 = async (asyncFunList, callback, callbackEnd, n) => {
   console.time();
   await Promise.all(
     asyncFunList.map((asyncFn) =>
-      makePromise(asyncFn).then((res) => {
+      makePromise(asyncFn, (res) => res).then((res) => {
         if (index < n) {
           callback(res);
           index++;
@@ -91,7 +93,7 @@ const concurrentQueue3 = async (asyncFunList, threadNumber) => {
   while (threadNumber > 0 && asyncFunList.length > 0) {
     threadNumber--;
     const asyncFn = asyncFunList.shift();
-    makePromise(asyncFn).then((res) => {
+    makePromise(asyncFn, (res) => res).then((res) => {
       concurrentQueue3(asyncFunList, 1);
     });
   }
